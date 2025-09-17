@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحكم في LED عن بعد</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .button {
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .on-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .on-btn:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+        }
+        
+        .off-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .off-btn:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .connected {
+            background-color: rgba(46, 204, 113, 0.3);
+            color: white;
+        }
+        
+        .disconnected {
+            background-color: rgba(231, 76, 60, 0.3);
+            color: white;
+        }
+        
+        .url-input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>التحكم في LED عن بعد</h1>
+        
+        <div>
+            <label for="esp-url">رابط ESP8266 (مع المنفذ إذا لزم الأمر):</label>
+            <input type="text" id="esp-url" class="url-input" placeholder="http://192.168.1.100" value="http://">
+        </div>
+        
+        <div>
+            <button class="button on-btn" onclick="controlLED(1)">تشغيل LED</button>
+            <button class="button off-btn" onclick="controlLED(0)">إيقاف LED</button>
+        </div>
+        
+        <div id="status" class="status">غير متصل</div>
+    </div>
+
+    <script>
+        // تحقق من كلمة المرور عند التحميل
+        function checkAuth() {
+            const password = prompt('أدخل كلمة المرور للوصول:');
+            if (password !== '520390') { // يمكنك تغيير كلمة المرور هنا
+                alert('كلمة المرور غير صحيحة');
+                document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: white;"><h1>غير مصرح بالوصول</h1><p>كلمة المرور غير صحيحة</p></div>';
+            }
+        }
+        
+        // دالة للتحكم في LED
+        function controlLED(state) {
+            const espUrl = document.getElementById('esp-url').value;
+            if (!espUrl || espUrl === 'http://') {
+                alert('يرجى إدخال رابط ESP8266 أولاً');
+                return;
+            }
+            
+            const url = ${espUrl}/led?state=${state};
+            
+            fetch(url)
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('status').textContent = state ? 
+                        'تم تشغيل LED بنجاح' : 'تم إيقاف LED بنجاح';
+                    document.getElementById('status').className = 'status connected';
+                    
+                    // إخفاء الرسالة بعد 3 ثوان
+                    setTimeout(() => {
+                        document.getElementById('status').textContent = 'جاهز';
+                        document.getElementById('status').className = 'status';
+                    }, 3000);
+                })
+                .catch(error => {
+                    document.getElementById('status').textContent = 'خطأ في الاتصال: ' + error;
+                    document.getElementById('status').className = 'status disconnected';
+                });
+        }
+        
+        // التحقق التلقائي من الاتصال عند تحميل الصفحة
+        window.addEventListener('load', function() {
+            checkAuth(); // التحقق من كلمة المرور
+            document.getElementById('status').textContent = 'جاهز للاستخدام';
+        });
+    </script>
+</body>
+</html>
