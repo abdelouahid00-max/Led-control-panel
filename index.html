@@ -92,12 +92,27 @@
             border-radius: 5px;
             background: rgba(255, 255, 255, 0.9);
             color: #333;
+            text-align: center;
         }
         
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
+        }
+        
+        .auto-detect {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .auto-detect:hover {
+            background-color: #2980b9;
         }
     </style>
 </head>
@@ -106,8 +121,8 @@
         <h1>التحكم في LED عن بعد</h1>
         
         <div>
-            <label for="esp-url">رابط ESP8266 (مع المنفذ إذا لزم الأمر):</label>
-            <input type="text" id="esp-url" class="url-input" placeholder="http://192.168.1.100" value="http://">
+            <label for="esp-url">رابط ESP8266:</label>
+            <input type="text" id="esp-url" class="url-input" placeholder="http://192.168.1.100">
         </div>
         
         <div>
@@ -115,52 +130,136 @@
             <button class="button off-btn" onclick="controlLED(0)">إيقاف LED</button>
         </div>
         
+        <button class="auto-detect" onclick="autoDetectESP()">اكتشاف تلقائي</button>
+        
         <div id="status" class="status">غير متصل</div>
     </div>
 
     <script>
-        // تحقق من كلمة المرور عند التحميل
+        // كلمة المرور للوصول إلى الصفحة
         function checkAuth() {
             const password = prompt('أدخل كلمة المرور للوصول:');
-            if (password !== '520390') { // يمكنك تغيير كلمة المرور هنا
+            if (password !== '520390') { // غير كلمة المرور هنا
                 alert('كلمة المرور غير صحيحة');
                 document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: white;"><h1>غير مصرح بالوصول</h1><p>كلمة المرور غير صحيحة</p></div>';
             }
         }
-        
-        // دالة للتحكم في LED
-        function controlLED(state) {
+
+        // اكتشاف تلقائي لعناوين ESP المحتملة
+        async function autoDetectESP() {
+            const commonIPs = [
+                'http://192.168.1.105',
+                'http://192.168.1.101',
+                'http://192.168.0.100',
+                'http://192.168.0.101',
+                'http://192.168.4.1',
+                'http://esp8266.local'
+            ];
+            
+            document.getElementById('status').textContent = 'جاري الاكتشاف...';
+            document.getElementById('status').className = 'status';
+            
+            for (const ip of commonIPs) {
+                try {
+                    const response = await fetch(${ip}/status, { 
+                        method: 'GET',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'text/plain'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        document.getElementById('esp-url').value = ip;
+                        document.getElementById('status').textContent = تم الاكتشاف: ${ip};
+                        document.getElementById('status').className = 'status connected';
+                        localStorage.setItem('esp_ip', ip);
+                        return;
+                    }
+                } catch (error) {
+                    // تجاهل الأخطاء والمتابعة
+                }
+            }
+            
+            document.getElementById('status').textContent = 'لم يتم العثور على ESP8266 تلقائياً';
+            document.getElementById('status').className = 'status disconnected';
+        }
+
+        // التحكم في LED
+        async function controlLED(state) {
             const espUrl = document.getElementById('esp-url').value;
             if (!espUrl || espUrl === 'http://') {
                 alert('يرجى إدخال رابط ESP8266 أولاً');
                 return;
             }
             
-            const url = ${espUrl}/led?state=${state};
-            
-            fetch(url)
-                .then(response => response.text())
-                .then(data => {
+            try {
+                const response = await fetch(${espUrl}/led?state=${state}, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    }
+                });
+                
+                if (response.ok) {
                     document.getElementById('status').textContent = state ? 
                         'تم تشغيل LED بنجاح' : 'تم إيقاف LED بنجاح';
                     document.getElementById('status').className = 'status connected';
+                    localStorage.setItem('esp_ip', espUrl);
                     
-                    // إخفاء الرسالة بعد 3 ثوان
                     setTimeout(() => {
                         document.getElementById('status').textContent = 'جاهز';
                         document.getElementById('status').className = 'status';
                     }, 3000);
-                })
-                .catch(error => {
-                    document.getElementById('status').textContent = 'خطأ في الاتصال: ' + error;
-                    document.getElementById('status').className = 'status disconnected';
-                });
+                } else {
+                    throw new Error('خطأ في الاستجابة');
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'خطأ في الاتصال: ' + error.message;
+                document.getElementById('status').className = 'status disconnected';
+            }
         }
-        
-        // التحقق التلقائي من الاتصال عند تحميل الصفحة
+
+        // التحقق من حالة LED كل 3 ثوان
+        async function checkLEDStatus() {
+            const espUrl = document.getElementById('esp-url').value;
+            if (!espUrl || espUrl === 'http://') return;
+            
+            try {
+                const response = await fetch(${espUrl}/status, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    document.getElementById('status').textContent = 
+                        data == "1" ? 'حالة LED: قيد التشغيل' : 'حالة LED: متوقف';
+                    document.getElementById('status').className = 'status connected';
+                }
+            } catch (error) {
+                // تجاهل الأخطاء في الفحص الدوري
+            }
+        }
+
+        // التهيئة عند تحميل الصفحة
         window.addEventListener('load', function() {
-            checkAuth(); // التحقق من كلمة المرور
+            checkAuth();
+            
+            // تحميل آخر عنوان ESP مستخدم
+            const savedIP = localStorage.getItem('esp_ip');
+            if (savedIP) {
+                document.getElementById('esp-url').value = savedIP;
+            }
+            
             document.getElementById('status').textContent = 'جاهز للاستخدام';
+            
+            // فحص دوري للحالة
+            setInterval(checkLEDStatus, 3000);
         });
     </script>
 </body>
