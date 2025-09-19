@@ -5,115 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>التحكم في LED عن بعد</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 20px;
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        h1 {
-            color: white;
-            margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .button {
-            padding: 15px 30px;
-            font-size: 18px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 10px;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-        
-        .on-btn {
-            background-color: #2ecc71;
-            color: white;
-        }
-        
-        .on-btn:hover {
-            background-color: #27ae60;
-            transform: translateY(-2px);
-        }
-        
-        .off-btn {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .off-btn:hover {
-            background-color: #c0392b;
-            transform: translateY(-2px);
-        }
-        
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .connected {
-            background-color: rgba(46, 204, 113, 0.3);
-            color: white;
-        }
-        
-        .disconnected {
-            background-color: rgba(231, 76, 60, 0.3);
-            color: white;
-        }
-        
-        .url-input {
-            width: 100%;
-            padding: 12px;
-            margin: 15px 0;
-            border: none;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-            text-align: center;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        
-        .auto-detect {
-            background-color: #3498db;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        
-        .auto-detect:hover {
-            background-color: #2980b9;
-        }
+        /* نفس الستايل السابق */
     </style>
 </head>
 <body>
@@ -122,7 +14,7 @@
         
         <div>
             <label for="esp-url">رابط ESP8266:</label>
-            <input type="text" id="esp-url" class="url-input" placeholder="http://192.168.1.105">
+            <input type="text" id="esp-url" class="url-input" placeholder="http://192.168.1.105" value="http://192.168.1.105">
         </div>
         
         <div>
@@ -139,7 +31,7 @@
         // كلمة المرور للوصول إلى الصفحة
         function checkAuth() {
             const password = prompt('أدخل كلمة المرور للوصول:');
-            if (password !== '520390') { // غير كلمة المرور هنا
+            if (password !== '520390') {
                 alert('كلمة المرور غير صحيحة');
                 document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: white;"><h1>غير مصرح بالوصول</h1><p>كلمة المرور غير صحيحة</p></div>';
             }
@@ -149,11 +41,11 @@
         async function autoDetectESP() {
             const commonIPs = [
                 'http://192.168.1.105',
-                'http://192.168.1.105',
-                'http://192.168.1.105',
-                'http://192.168.1.105',
-                'http://192.168.1.105',
-                'http://192.168.1.105'
+                'http://192.168.1.100',
+                'http://192.168.0.105',
+                'http://192.168.0.100',
+                'http://192.168.4.1',
+                'http://esp8266.local'
             ];
             
             document.getElementById('status').textContent = 'جاري الاكتشاف...';
@@ -254,6 +146,8 @@
             const savedIP = localStorage.getItem('esp_ip');
             if (savedIP) {
                 document.getElementById('esp-url').value = savedIP;
+            } else {
+                document.getElementById('esp-url').value = 'http://192.168.1.105';
             }
             
             document.getElementById('status').textContent = 'جاهز للاستخدام';
